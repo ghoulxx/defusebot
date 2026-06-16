@@ -27,8 +27,9 @@ module.exports = {
     const embed = createEmbed({ title: 'Giveaway started!', description: `Prize: **${prize}**
 Winners: **${winners}**
 Ends: <t:${Math.floor(endsAt.getTime() / 1000)}:R>` });
-    const button = { type: 2, style: 3, label: 'Enter Giveaway', custom_id: `giveaway_enter_${message.id}` };
-    const sent = await message.channel.send({ embeds: [embed], components: [{ type: 1, components: [button] }] });
+    const sent = await message.channel.send({ embeds: [embed] });
+    const button = { type: 2, style: 3, label: 'Enter Giveaway', custom_id: `giveaway_enter_${sent.id}` };
+    await sent.edit({ components: [{ type: 1, components: [button] }] });
     await Giveaway.create({ guildId: message.guild.id, channelId: message.channel.id, messageId: sent.id, prize, winnerCount: winners, endsAt, entries: [] });
     return message.reply({ embeds: [createEmbed({ title: 'Giveaway created', description: `Giveaway posted in ${message.channel}.`, color: 'Green' })] });
   }
