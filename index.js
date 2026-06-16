@@ -28,17 +28,27 @@ if (!process.env.TOKEN || !process.env.MONGO_URI) {
 const mongoUri = process.env.MONGO_URI.trim().replace(/^"|"$/g, '');
 const botToken = process.env.TOKEN.trim().replace(/^"|"$/g, '');
 
-mongoose.connect(mongoUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log('Connected to MongoDB');
-}).catch((error) => {
-  console.error('Failed to connect to MongoDB:', error);
-  process.exit(1);
-});
+// Start application after MongoDB connection to avoid DB buffering errors
+(async () => {
+  try {
+    await mongoose.connect(mongoUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    console.log('Connected to MongoDB');
+  } catch (error) {
+    console.error('Failed to connect to MongoDB:', error);
+    process.exit(1);
+  }
 
-loadCommands(client, path.join(__dirname, 'src', 'commands'));
-loadEvents(client, path.join(__dirname, 'src', 'events'));
+  // load commands/events after DB is ready
+  loadCommands(client, path.join(__dirname, 'src', 'commands'));
+  loadEvents(client, path.join(__dirname, 'src', 'events'));
 
-client.login(botToken);
+  try {
+    await client.login(botToken);
+  } catch (err) {
+    console.error('Failed to login Discord client:', err);
+    process.exit(1);
+  }
+})();
