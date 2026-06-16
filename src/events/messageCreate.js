@@ -8,7 +8,7 @@ module.exports = {
     if (message.author.bot || !message.guild) return;
 
     const guildConfig = await GuildConfig.findOne({ guildId: message.guild.id });
-    const prefix = guildConfig?.prefix || '!';
+    const prefix = guildConfig?.prefix || '$';
     const content = message.content.trim();
 
     if (content.startsWith(prefix)) {

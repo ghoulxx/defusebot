@@ -16,7 +16,7 @@ A multipurpose Discord bot built with Node.js, discord.js v14, and MongoDB.
 
 ## Configuration
 
-The bot uses prefix commands. The default prefix is `!` and can be customized per server in the database.
+The bot uses prefix commands. The default prefix is `$` and can be customized per server in the database.
 
 ## Commands
 

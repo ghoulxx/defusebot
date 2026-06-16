@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const guildConfigSchema = new mongoose.Schema({
   guildId: { type: String, required: true, unique: true },
-  prefix: { type: String, default: '!' },
+  prefix: { type: String, default: '$' },
   logChannelId: { type: String, default: null },
   welcomeChannelId: { type: String, default: null },
   leaveChannelId: { type: String, default: null },
