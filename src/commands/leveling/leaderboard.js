@@ -10,8 +10,9 @@ module.exports = {
     if (!top.length) {
       return message.reply({ embeds: [createEmbed({ title: 'Leaderboard', description: 'No leveling data yet.' })] });
     }
-    const description = top.map((record, index) => `**${index + 1}.** <@${record.userId}> — Level ${record.level} (${record.xp} XP)`).join('
-');
+    const description = top
+      .map((record, index) => `**${index + 1}.** <@${record.userId}> — Level ${record.level} (${record.xp} XP)`)
+      .join('\n');
     return message.reply({ embeds: [createEmbed({ title: 'Leaderboard', description })] });
   }
 };
