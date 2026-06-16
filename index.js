@@ -26,6 +26,7 @@ if (!process.env.TOKEN || !process.env.MONGO_URI) {
 }
 
 const mongoUri = process.env.MONGO_URI.trim().replace(/^"|"$/g, '');
+const botToken = process.env.TOKEN.trim().replace(/^"|"$/g, '');
 
 mongoose.connect(mongoUri, {
   useNewUrlParser: true,
@@ -40,4 +41,4 @@ mongoose.connect(mongoUri, {
 loadCommands(client, path.join(__dirname, 'src', 'commands'));
 loadEvents(client, path.join(__dirname, 'src', 'events'));
 
-client.login(process.env.TOKEN);
+client.login(botToken);
