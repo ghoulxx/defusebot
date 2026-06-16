@@ -4,7 +4,7 @@ const Giveaway = require('../models/Giveaway');
 const { createEmbed } = require('../utils/embed');
 
 module.exports = {
-  name: 'ready',
+  name: 'clientReady',
   once: true,
   async execute(client) {
     console.log(`Logged in as ${client.user.tag}`);
