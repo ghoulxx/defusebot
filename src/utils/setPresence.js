@@ -2,9 +2,8 @@ const { ActivityType } = require('discord.js');
 
 function formatCounts(client) {
   try {
-    const guildCount = client.guilds.cache.size || 0;
-    const memberCount = client.guilds.cache.reduce((acc, g) => acc + (g.memberCount || 0), 0);
-    return `${guildCount} Servers • ${memberCount.toLocaleString()} Users`;
+    // For streamer mode, return a simple label instead of dynamic counts
+    return 'Streamer Mode';
   } catch (err) {
     return 'VR Mode';
   }
