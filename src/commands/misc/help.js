@@ -257,7 +257,7 @@ module.exports = {
       for (const [name, command] of cmds) {
         const category = getCategory(command);
         if (!grouped[category]) grouped[category] = [];
-        grouped[category].push(`**${name}** — ${command.description || 'No description.'}`);
+        grouped[category].push(`**${name}** — ${command.description || 'No description.'}`.replace(/\s+/g, ' ').trim());
       }
 
       const categories = Object.keys(grouped).sort();
@@ -277,7 +277,7 @@ module.exports = {
         new ButtonBuilder().setCustomId(`help_page_${Math.max(1, safePage - 1)}`).setLabel('◀ Previous').setStyle(ButtonStyle.Secondary).setDisabled(safePage <= 1),
         new ButtonBuilder().setCustomId(`help_page_${Math.min(totalPages, safePage + 1)}`).setLabel('Next ▶').setStyle(ButtonStyle.Secondary).setDisabled(safePage >= totalPages)
       );
-      return message.reply({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for more info.\nClick the buttons to browse categories.', fields, footer })], components: [row] });
+      return message.reply({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for details.\nUse buttons to browse.', fields, footer })], components: [row] });
     }
 
     if (args.length) {
@@ -292,7 +292,7 @@ module.exports = {
     for (const [name, command] of cmds) {
       const category = getCategory(command);
       if (!grouped[category]) grouped[category] = [];
-      grouped[category].push(`**${name}** — ${command.description || 'No description.'}`);
+      grouped[category].push(`**${name}** — ${command.description || 'No description.'}`.replace(/\s+/g, ' ').trim());
     }
 
     const categories = Object.keys(grouped).sort();
@@ -314,6 +314,6 @@ module.exports = {
       new ButtonBuilder().setCustomId(`help_page_${Math.max(1, page - 1)}`).setLabel('◀ Previous').setStyle(ButtonStyle.Secondary).setDisabled(page <= 1),
       new ButtonBuilder().setCustomId(`help_page_${Math.min(totalPages, page + 1)}`).setLabel('Next ▶').setStyle(ButtonStyle.Secondary).setDisabled(page >= totalPages)
     );
-    return message.reply({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for more info.\nClick the buttons to browse categories.', fields, footer })], components: [row] });
+    return message.reply({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for details.\nUse buttons to browse.', fields, footer })], components: [row] });
   }
 };
