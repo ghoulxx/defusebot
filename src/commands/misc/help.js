@@ -224,7 +224,11 @@ const CATEGORY_MAP = {
   'play': 'Music',
   'pause': 'Music',
   'resume': 'Music',
-  'stop': 'Music'
+  'stop': 'Music',
+  'skip': 'Music',
+  'queue': 'Music',
+  'nowplaying': 'Music',
+  'volume': 'Music'
 };
 
 function getCategory(command) {
@@ -259,12 +263,12 @@ module.exports = {
       grouped[category].push(`**${name}** — ${command.description || 'No description.'}`);
     }
 
-    // Sort categories alphabetically and build fields
+    // Sort categories alphabetically and build a wider, two-column-style layout
     const categories = Object.keys(grouped).sort();
     const fields = categories.map(cat => ({
       name: cat,
-      value: grouped[cat].join('\n'),
-      inline: false
+      value: grouped[cat].slice(0, 8).join('\n'),
+      inline: true
     }));
 
     return message.reply({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for more info.', fields })] });
