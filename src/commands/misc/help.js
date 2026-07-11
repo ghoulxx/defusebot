@@ -263,14 +263,21 @@ module.exports = {
       grouped[category].push(`**${name}** — ${command.description || 'No description.'}`);
     }
 
-    // Sort categories alphabetically and build a wider, two-column-style layout
     const categories = Object.keys(grouped).sort();
-    const fields = categories.map(cat => ({
+    const pageSize = 6;
+    const page = Number(args[0]) || 1;
+    const totalPages = Math.max(1, Math.ceil(categories.length / pageSize));
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const pageCategories = categories.slice(start, end);
+
+    const fields = pageCategories.map(cat => ({
       name: cat,
-      value: grouped[cat].slice(0, 8).join('\n'),
+      value: grouped[cat].slice(0, 10).join('\n'),
       inline: true
     }));
 
-    return message.reply({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for more info.', fields })] });
+    const footer = `Page ${Math.min(page, totalPages)} of ${totalPages}`;
+    return message.reply({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for more info.\nUse `$help 2` for the next page.', fields, footer })] });
   }
 };
