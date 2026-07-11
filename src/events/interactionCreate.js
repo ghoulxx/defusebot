@@ -3,11 +3,49 @@ const Ticket = require('../models/Ticket');
 const Giveaway = require('../models/Giveaway');
 const ButtonRole = require('../models/ButtonRole');
 const { createEmbed } = require('../utils/embed');
+const { getCategory } = require('../commands/misc/help');
 
 module.exports = {
   name: 'interactionCreate',
   async execute(client, interaction) {
     if (!interaction.isButton()) return;
+
+    if (interaction.customId.startsWith('help_page_')) {
+      const targetPage = Number(interaction.customId.replace('help_page_', ''));
+      if (!Number.isNaN(targetPage)) {
+        const { createEmbed } = require('../utils/embed');
+        const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+        const clientCommands = interaction.client.commands;
+        const cmds = new Map();
+        for (const [, command] of clientCommands) {
+          if (!cmds.has(command.name)) cmds.set(command.name, command);
+        }
+        const grouped = {};
+        for (const [name, command] of cmds) {
+          const category = getCategory(command);
+          if (!grouped[category]) grouped[category] = [];
+          grouped[category].push(`**${name}** — ${command.description || 'No description.'}`);
+        }
+        const categories = Object.keys(grouped).sort();
+        const pageSize = 6;
+        const totalPages = Math.max(1, Math.ceil(categories.length / pageSize));
+        const safePage = Math.min(Math.max(1, targetPage), totalPages);
+        const start = (safePage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageCategories = categories.slice(start, end);
+        const fields = pageCategories.map(cat => ({
+          name: cat,
+          value: grouped[cat].slice(0, 10).join('\n'),
+          inline: true
+        }));
+        const footer = `Page ${safePage} of ${totalPages}`;
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId(`help_page_${Math.max(1, safePage - 1)}`).setLabel('◀').setStyle(ButtonStyle.Secondary).setDisabled(safePage <= 1),
+          new ButtonBuilder().setCustomId(`help_page_${Math.min(totalPages, safePage + 1)}`).setLabel('▶').setStyle(ButtonStyle.Secondary).setDisabled(safePage >= totalPages)
+        );
+        return interaction.update({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for more info.', fields, footer })], components: [row] });
+      }
+    }
 
     if (interaction.customId === 'ticket_open') {
       const config = await TicketConfig.findOne({ guildId: interaction.guildId });

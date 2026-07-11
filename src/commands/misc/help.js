@@ -1,3 +1,4 @@
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { createEmbed } = require('../../utils/embed');
 
 // Command category mapping (fallback if command.category not set)
@@ -239,6 +240,7 @@ module.exports = {
   name: 'help',
   description: 'List available commands or show details for a specific command.',
   aliases: ['h'],
+  getCategory,
   async execute(message, args) {
     const client = message.client;
     const cmds = new Map();
@@ -247,9 +249,39 @@ module.exports = {
       if (!cmds.has(command.name)) cmds.set(command.name, command);
     }
 
+    const requested = args[0]?.toLowerCase();
+    const requestedPage = Number(requested);
+    if (args.length && !Number.isNaN(requestedPage)) {
+      const page = Math.max(1, requestedPage);
+      const grouped = {};
+      for (const [name, command] of cmds) {
+        const category = getCategory(command);
+        if (!grouped[category]) grouped[category] = [];
+        grouped[category].push(`**${name}** — ${command.description || 'No description.'}`);
+      }
+
+      const categories = Object.keys(grouped).sort();
+      const pageSize = 6;
+      const totalPages = Math.max(1, Math.ceil(categories.length / pageSize));
+      const safePage = Math.min(page, totalPages);
+      const start = (safePage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageCategories = categories.slice(start, end);
+      const fields = pageCategories.map(cat => ({
+        name: cat,
+        value: grouped[cat].slice(0, 10).join('\n'),
+        inline: true
+      }));
+      const footer = `Page ${safePage} of ${totalPages}`;
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`help_page_${Math.max(1, safePage - 1)}`).setLabel('◀').setStyle(ButtonStyle.Secondary).setDisabled(safePage <= 1),
+        new ButtonBuilder().setCustomId(`help_page_${Math.min(totalPages, safePage + 1)}`).setLabel('▶').setStyle(ButtonStyle.Secondary).setDisabled(safePage >= totalPages)
+      );
+      return message.reply({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for more info.', fields, footer })], components: [row] });
+    }
+
     if (args.length) {
-      const name = args[0].toLowerCase();
-      const command = client.commands.get(name);
+      const command = client.commands.get(requested);
       if (!command) return message.reply({ embeds: [createEmbed({ title: 'Help', description: 'Command not found.' })] });
       const desc = `**Name:** ${command.name}\n**Description:** ${command.description || 'No description.'}\n**Aliases:** ${(command.aliases || []).join(', ') || 'None'}`;
       return message.reply({ embeds: [createEmbed({ title: `Help — ${command.name}`, description: desc })] });
@@ -278,6 +310,10 @@ module.exports = {
     }));
 
     const footer = `Page ${Math.min(page, totalPages)} of ${totalPages}`;
-    return message.reply({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for more info.\nUse `$help 2` for the next page.', fields, footer })] });
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(`help_page_${Math.max(1, page - 1)}`).setLabel('◀').setStyle(ButtonStyle.Secondary).setDisabled(page <= 1),
+      new ButtonBuilder().setCustomId(`help_page_${Math.min(totalPages, page + 1)}`).setLabel('▶').setStyle(ButtonStyle.Secondary).setDisabled(page >= totalPages)
+    );
+    return message.reply({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for more info.', fields, footer })], components: [row] });
   }
 };
