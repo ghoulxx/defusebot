@@ -22,7 +22,8 @@ function setPresence(client, options = {}) {
       // show counts in console
       console.log(`Bot supports ${guildCount} servers and ${memberCount.toLocaleString()} users`);
 
-      const status = (client?.user?.presence?.status) || (client?.presence?.status) || 'dnd';
+      // allow caller to override status; default to online so bot isn't DND
+      const status = options.status || (client?.user?.presence?.status) || (client?.presence?.status) || 'online';
       const statusEmoji = {
         online: '🟢',
         dnd: '🔴',
@@ -41,7 +42,7 @@ function setPresence(client, options = {}) {
             url: options.streamUrl || 'https://twitch.tv/'
           }
         ],
-        status: 'dnd'
+        status: options.status || 'online'
       });
     } catch (error) {
       console.error('Failed to set presence:', error);
