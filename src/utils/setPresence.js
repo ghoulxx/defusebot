@@ -2,8 +2,9 @@ const { ActivityType } = require('discord.js');
 
 function formatCounts(client) {
   try {
-    // For streamer mode, return a simple label instead of dynamic counts
-    return 'Streamer Mode';
+    const guildCount = client.guilds.cache.size || 0;
+    const memberCount = client.guilds.cache.reduce((acc, g) => acc + (g.memberCount || 0), 0);
+    return `${guildCount} Servers • ${memberCount.toLocaleString()} Users`;
   } catch (err) {
     return 'VR Mode';
   }
@@ -15,7 +16,12 @@ function setPresence(client, options = {}) {
 
   async function apply() {
     try {
-      const base = formatCounts(client);
+      // compute numeric counts for logging
+      const guildCount = client.guilds.cache.size || 0;
+      const memberCount = client.guilds.cache.reduce((acc, g) => acc + (g.memberCount || 0), 0);
+      // show counts in console
+      console.log(`Bot supports ${guildCount} servers and ${memberCount.toLocaleString()} users`);
+
       const status = (client?.user?.presence?.status) || (client?.presence?.status) || 'dnd';
       const statusEmoji = {
         online: '🟢',
@@ -24,7 +30,9 @@ function setPresence(client, options = {}) {
         offline: '⚫',
         invisible: '⚫'
       }[status] || '';
-      const name = `${statusEmoji} ${base}`;
+
+      // set presence to VR Mode (with status emoji prefix)
+      const name = `${statusEmoji} VR Mode`;
       await client.user.setPresence({
         activities: [
           {
