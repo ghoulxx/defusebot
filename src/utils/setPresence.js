@@ -31,13 +31,14 @@ function setPresence(client, options = {}) {
         invisible: '⚫'
       }[status] || '';
 
-      // set presence to VR Mode (with status emoji prefix)
-      const name = `${statusEmoji} VR Mode`;
+      // set presence to streaming-style (VR) using emoji-only name
+      const name = `${statusEmoji}` || 'VR';
       await client.user.setPresence({
         activities: [
           {
             name,
-            type: ActivityType.Custom
+            type: ActivityType.Streaming,
+            url: options.streamUrl || 'https://twitch.tv/'
           }
         ],
         status: 'dnd'
