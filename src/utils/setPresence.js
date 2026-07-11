@@ -37,7 +37,7 @@ function setPresence(client, options = {}) {
         activities: [
           {
             name,
-            type: ActivityType.Playing
+            type: ActivityType.Custom
           }
         ],
         status: 'dnd'
