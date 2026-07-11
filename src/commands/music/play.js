@@ -1,7 +1,14 @@
 const { createEmbed } = require('../../utils/embed');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } = require('@discordjs/voice');
 
 const queues = new Map();
+
+function getVoiceModule() {
+  try {
+    return require('@discordjs/voice');
+  } catch (error) {
+    return null;
+  }
+}
 
 function getQueue(guildId) {
   if (!queues.has(guildId)) queues.set(guildId, { songs: [], playing: false, connection: null, player: null, current: null });
@@ -16,6 +23,12 @@ async function playNext(guildId, message) {
     return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'Queue finished.' })] });
   }
 
+  const voice = getVoiceModule();
+  if (!voice) {
+    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'Audio playback is currently unavailable because @discordjs/voice is not installed in this environment.', color: 'Red' })] });
+  }
+
+  const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } = voice;
   const song = queue.songs.shift();
   queue.current = song;
   queue.playing = true;
