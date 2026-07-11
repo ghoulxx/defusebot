@@ -24,6 +24,7 @@ module.exports = {
     }
 
     const cfg = await GuildConfig.findOne({ guildId });
-    return message.reply({ embeds: [createEmbed({ title: 'Message logging', description: `Enabled: **${cfg?.messageLoggingEnabled ? 'YES' : 'NO'}**\nChannel: ${cfg?.messageLogChannelId ? `<#${cfg.messageLogChannelId}>` : 'Not set'}`)] });
+    const description = `Enabled: **${cfg?.messageLoggingEnabled ? 'YES' : 'NO'}**\nChannel: ${cfg?.messageLogChannelId ? `<#${cfg.messageLogChannelId}>` : 'Not set'}`;
+    return message.reply({ embeds: [createEmbed({ title: 'Message logging', description })] });
   }
 };
