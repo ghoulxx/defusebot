@@ -25,6 +25,26 @@ module.exports = {
         return;
       }
     }
+    // Message logging (if enabled)
+    if (guildConfig?.messageLoggingEnabled) {
+      try {
+        const logId = guildConfig.messageLogChannelId;
+        if (logId && message.channel.id !== logId) {
+          const logChannel = message.guild.channels.cache.get(logId) || await message.guild.channels.fetch(logId).catch(() => null);
+          if (logChannel) {
+            const fields = [
+              { name: 'Author', value: `${message.author.tag} (${message.author.id})`, inline: true },
+              { name: 'Channel', value: `<#${message.channel.id}>`, inline: true }
+            ];
+            if (message.content) fields.push({ name: 'Content', value: message.content.substring(0, 1024) });
+            if (message.attachments && message.attachments.size) fields.push({ name: 'Attachments', value: message.attachments.map(a => a.url).join('\n') });
+            await logChannel.send({ embeds: [createEmbed({ title: 'Message Sent', fields, timestamp: new Date() })] }).catch(() => null);
+          }
+        }
+      } catch (err) {
+        console.error('Message logging failed', err);
+      }
+    }
 
     const now = Date.now();
     // Respect per-guild leveling toggle
