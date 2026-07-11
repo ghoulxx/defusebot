@@ -261,7 +261,7 @@ module.exports = {
       }
 
       const categories = Object.keys(grouped).sort();
-      const pageSize = 4;
+      const pageSize = 3;
       const totalPages = Math.max(1, Math.ceil(categories.length / pageSize));
       const safePage = Math.min(page, totalPages);
       const start = (safePage - 1) * pageSize;
@@ -269,7 +269,7 @@ module.exports = {
       const pageCategories = categories.slice(start, end);
       const fields = pageCategories.map(cat => ({
         name: `${cat}`,
-        value: grouped[cat].slice(0, 6).join('\n'),
+        value: grouped[cat].slice(0, 4).join('\n'),
         inline: true
       }));
       const footer = `Page ${safePage} of ${totalPages}`;
@@ -296,7 +296,7 @@ module.exports = {
     }
 
     const categories = Object.keys(grouped).sort();
-    const pageSize = 4;
+    const pageSize = 3;
     const page = Number(args[0]) || 1;
     const totalPages = Math.max(1, Math.ceil(categories.length / pageSize));
     const start = (page - 1) * pageSize;
@@ -305,7 +305,7 @@ module.exports = {
 
     const fields = pageCategories.map(cat => ({
       name: `${cat}`,
-      value: grouped[cat].slice(0, 6).join('\n'),
+      value: grouped[cat].slice(0, 4).join('\n'),
       inline: true
     }));
 
