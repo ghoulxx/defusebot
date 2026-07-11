@@ -24,26 +24,26 @@ module.exports = {
         for (const [name, command] of cmds) {
           const category = getCategory(command);
           if (!grouped[category]) grouped[category] = [];
-          grouped[category].push(`**${name}** — ${command.description || 'No description.'}`);
+          grouped[category].push(`**${name}** — ${command.description || 'No description.'}`.replace(/\s+/g, ' ').trim());
         }
         const categories = Object.keys(grouped).sort();
-        const pageSize = 6;
+        const pageSize = 3;
         const totalPages = Math.max(1, Math.ceil(categories.length / pageSize));
         const safePage = Math.min(Math.max(1, targetPage), totalPages);
         const start = (safePage - 1) * pageSize;
         const end = start + pageSize;
         const pageCategories = categories.slice(start, end);
         const fields = pageCategories.map(cat => ({
-          name: cat,
-          value: grouped[cat].slice(0, 10).join('\n'),
+          name: `${cat}`,
+          value: grouped[cat].slice(0, 4).join('\n'),
           inline: true
         }));
         const footer = `Page ${safePage} of ${totalPages}`;
         const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setCustomId(`help_page_${Math.max(1, safePage - 1)}`).setLabel('◀').setStyle(ButtonStyle.Secondary).setDisabled(safePage <= 1),
-          new ButtonBuilder().setCustomId(`help_page_${Math.min(totalPages, safePage + 1)}`).setLabel('▶').setStyle(ButtonStyle.Secondary).setDisabled(safePage >= totalPages)
+          new ButtonBuilder().setCustomId(`help_page_${Math.max(1, safePage - 1)}`).setLabel('◀ Previous').setStyle(ButtonStyle.Secondary).setDisabled(safePage <= 1),
+          new ButtonBuilder().setCustomId(`help_page_${Math.min(totalPages, safePage + 1)}`).setLabel('Next ▶').setStyle(ButtonStyle.Secondary).setDisabled(safePage >= totalPages)
         );
-        return interaction.update({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for more info.', fields, footer })], components: [row] });
+        return interaction.update({ embeds: [createEmbed({ title: 'Commands', description: 'Use `$help <command>` for details.\nUse buttons to browse.', fields, footer })], components: [row] });
       }
     }
 
