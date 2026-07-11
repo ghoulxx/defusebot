@@ -6,12 +6,11 @@ function setPresence(client) {
     client.user.setPresence({
       activities: [
         {
-          name: '/functionaladdicts',
-          type: ActivityType.Streaming,
-          url: 'https://twitch.tv/functionaladdicts'
+          name: 'VR Mode',
+          type: ActivityType.Playing
         }
       ],
-      status: 'online'
+      status: 'dnd'
     });
   } catch (error) {
     console.error('Failed to set presence:', error);
