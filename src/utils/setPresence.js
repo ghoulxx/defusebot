@@ -16,26 +16,22 @@ function setPresence(client, options = {}) {
 
   async function apply() {
     try {
-      // compute numeric counts for logging
       const guildCount = client.guilds.cache.size || 0;
-      const memberCount = client.guilds.cache.reduce((acc, g) => acc + (g.memberCount || 0), 0);
-      // show counts in console
+      const memberCount = client.guilds.cache.reduce((acc, guild) => acc + (guild.memberCount || 0), 0);
+      const base = `${guildCount} Servers • ${memberCount.toLocaleString()} Users`;
+
       console.log(`Bot supports ${guildCount} servers and ${memberCount.toLocaleString()} users`);
 
-      // allow caller to override status; default to online so bot isn't DND
       const status = options.status || (client?.user?.presence?.status) || (client?.presence?.status) || 'online';
-      const base = formatCounts(client);
-      // set presence to streaming-style with counts as the activity name
-      const name = base;
       await client.user.setPresence({
         activities: [
           {
-            name,
+            name: base,
             type: ActivityType.Streaming,
             url: options.streamUrl || 'https://twitch.tv/'
           }
         ],
-        status: options.status || 'online'
+        status
       });
     } catch (error) {
       console.error('Failed to set presence:', error);
