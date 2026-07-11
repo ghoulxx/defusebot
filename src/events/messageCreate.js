@@ -27,6 +27,8 @@ module.exports = {
     }
 
     const now = Date.now();
+    // Respect per-guild leveling toggle
+    if (guildConfig && guildConfig.levelingEnabled === false) return;
     let record = await UserLevel.findOne({ guildId: message.guild.id, userId: message.author.id });
     if (!record) {
       record = new UserLevel({ guildId: message.guild.id, userId: message.author.id });
