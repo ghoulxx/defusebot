@@ -26,6 +26,10 @@ const CATEGORY_MAP = {
   'giveaways': 'Giveaways',
   // Tickets
   'ticket': 'Tickets',
+  'jail': 'Moderation',
+  'auditlog': 'Configuration',
+  'messagelog': 'Configuration',
+  'serverinfo': 'Utility',
   // Voice Master
   'voicemaster': 'Voice Master',
   'voiceclaim': 'Voice Master',
