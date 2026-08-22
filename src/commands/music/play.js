@@ -25,11 +25,29 @@ async function resolveTrack(query) {
   try {
     const playDl = require('play-dl');
     const isUrl = /^https?:\/\//i.test(trimmed);
-    const source = isUrl ? trimmed : (await playDl.search(trimmed, { limit: 1 }))?.[0]?.url || trimmed;
-    const info = isUrl ? await playDl.video_basic_info(source) : await playDl.video_basic_info(source);
-    const title = info?.video_details?.title || trimmed;
+    let source = trimmed;
+    let title = trimmed;
+
+    if (isUrl) {
+      const lower = trimmed.toLowerCase();
+      if (/spotify\.com/i.test(lower)) {
+        const spotifyItem = await playDl.spotify(trimmed).catch(() => null);
+        const searchText = spotifyItem
+          ? `${spotifyItem.name || spotifyItem.title || trimmed}${spotifyItem.artists?.length ? ` ${spotifyItem.artists.map((artist) => artist.name || artist).join(' ')}` : ''}`.trim()
+          : trimmed;
+        const searchResults = await playDl.search(searchText, { limit: 1 }).catch(() => []);
+        source = searchResults?.[0]?.url || trimmed;
+      }
+    } else {
+      const searchResults = await playDl.search(trimmed, { limit: 1 }).catch(() => []);
+      source = searchResults?.[0]?.url || trimmed;
+    }
+
+    const info = await playDl.video_basic_info(source).catch(() => null);
+    title = info?.video_details?.title || info?.title || title;
     return { title, url: source };
   } catch (error) {
+    console.error('Track resolve failed:', error);
     return { title: trimmed, url: trimmed };
   }
 }
