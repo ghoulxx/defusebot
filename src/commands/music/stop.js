@@ -1,10 +1,5 @@
 const { createEmbed } = require('../../utils/embed');
-
-const queues = new Map();
-function getQueue(guildId) {
-  if (!queues.has(guildId)) queues.set(guildId, { player: null, connection: null, songs: [] });
-  return queues.get(guildId);
-}
+const { clearQueue, getQueue } = require('./musicState');
 
 module.exports = {
   name: 'stop',
@@ -13,9 +8,7 @@ module.exports = {
     const queue = getQueue(message.guild.id);
     if (queue.player) queue.player.stop();
     if (queue.connection) queue.connection.destroy();
-    queue.songs = [];
-    queue.player = null;
-    queue.connection = null;
+    clearQueue(message.guild.id);
     return message.reply({ embeds: [createEmbed({ title: 'Music', description: 'Playback stopped and queue cleared.' })] });
   }
 };

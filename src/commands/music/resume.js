@@ -1,10 +1,5 @@
 const { createEmbed } = require('../../utils/embed');
-
-const queues = new Map();
-function getQueue(guildId) {
-  if (!queues.has(guildId)) queues.set(guildId, { player: null });
-  return queues.get(guildId);
-}
+const { getQueue } = require('./musicState');
 
 module.exports = {
   name: 'resume',

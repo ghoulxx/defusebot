@@ -1,6 +1,5 @@
 const { createEmbed } = require('../../utils/embed');
-
-const queues = new Map();
+const { addSong, getQueue, resetPlayback } = require('./musicState');
 
 function getVoiceModule() {
   try {
@@ -10,16 +9,26 @@ function getVoiceModule() {
   }
 }
 
-function getQueue(guildId) {
-  if (!queues.has(guildId)) queues.set(guildId, { songs: [], playing: false, connection: null, player: null, current: null });
-  return queues.get(guildId);
+async function resolveTrack(query) {
+  const trimmed = query?.trim();
+  if (!trimmed) return null;
+
+  try {
+    const playDl = require('play-dl');
+    const isUrl = /^https?:\/\//i.test(trimmed);
+    const source = isUrl ? trimmed : (await playDl.search(trimmed, { limit: 1 }))?.[0]?.url || trimmed;
+    const info = isUrl ? await playDl.video_basic_info(source) : await playDl.video_basic_info(source);
+    const title = info?.video_details?.title || trimmed;
+    return { title, url: source };
+  } catch (error) {
+    return { title: trimmed, url: trimmed };
+  }
 }
 
 async function playNext(guildId, message) {
   const queue = getQueue(guildId);
   if (!queue.songs.length) {
-    queue.playing = false;
-    queue.current = null;
+    resetPlayback(guildId);
     return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'Queue finished.' })] });
   }
 
@@ -30,6 +39,13 @@ async function playNext(guildId, message) {
 
   const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } = voice;
   const song = queue.songs.shift();
+  const resolved = await resolveTrack(song.url || song.title);
+  if (!resolved) {
+    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'Unable to resolve that track.', color: 'Red' })] });
+  }
+
+  song.title = resolved.title;
+  song.url = resolved.url;
   queue.current = song;
   queue.playing = true;
 
@@ -51,7 +67,17 @@ async function playNext(guildId, message) {
     });
   }
 
-  const resource = createAudioResource(song.url, { inputType: 'arbitrary' });
+  let stream;
+  try {
+    const playDl = require('play-dl');
+    stream = await playDl.stream(song.url, { quality: 0 });
+  } catch (error) {
+    console.error('Music stream failed:', error);
+    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'That track could not be streamed.', color: 'Red' })] });
+  }
+
+  const resource = createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true });
+  if (resource.volume) resource.volume.setVolume(Math.max(0, Math.min(1, (queue.volume || 100) / 100)));
   queue.player.play(resource);
   return message.channel.send({ embeds: [createEmbed({ title: 'Now playing', description: `${song.title}` })] });
 }
@@ -69,8 +95,7 @@ module.exports = {
       return message.reply({ embeds: [createEmbed({ title: 'Music', description: 'Usage: $play <youtube-url-or-search-term>', color: 'Red' })] });
     }
 
-    const queue = getQueue(message.guild.id);
-    queue.songs.push({ title: query, url: query });
+    const queue = addSong(message.guild.id, { title: query, url: query });
 
     if (!queue.playing) {
       await playNext(message.guild.id, message);
