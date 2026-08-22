@@ -1,6 +1,15 @@
 const { createEmbed } = require('../../utils/embed');
 const { addSong, getQueue, resetPlayback } = require('./musicState');
 
+try {
+  const ffmpegPath = require('ffmpeg-static');
+  if (ffmpegPath && !process.env.FFMPEG_PATH) {
+    process.env.FFMPEG_PATH = ffmpegPath;
+  }
+} catch (error) {
+  // ffmpeg-static will be installed by package.json for Railway builds.
+}
+
 function getVoiceModule() {
   try {
     return require('@discordjs/voice');
@@ -73,7 +82,7 @@ async function playNext(guildId, message) {
     stream = await playDl.stream(song.url, { quality: 0 });
   } catch (error) {
     console.error('Music stream failed:', error);
-    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'That track could not be streamed.', color: 'Red' })] });
+    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'That track could not be streamed. It may be unavailable, restricted, or missing FFmpeg support in the host environment.', color: 'Red' })] });
   }
 
   const resource = createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true });
