@@ -1,6 +1,7 @@
 const VoiceMasterConfig = require('../models/VoiceMasterConfig');
 const TempVoiceChannel = require('../models/TempVoiceChannel');
 const { createEmbed } = require('../utils/embed');
+const { clearQueue, resetPlayback } = require('../commands/music/musicState');
 
 module.exports = {
   name: 'voiceStateUpdate',
@@ -8,6 +9,13 @@ module.exports = {
     const guild = newState.guild || oldState.guild;
     const config = await VoiceMasterConfig.findOne({ guildId: guild.id });
     if (!config) return;
+
+    if (oldState.member?.id === client.user?.id && oldState.channelId && !newState.channelId) {
+      clearQueue(guild.id);
+      resetPlayback(guild.id);
+      console.log(`[Voice] Bot was disconnected from a voice channel in ${guild.name}.`);
+    }
+
     const joinChannelId = config.joinToCreateChannelId;
     if (newState.channelId === joinChannelId && !newState.member.user.bot) {
       const category = await guild.channels.fetch(config.categoryId).catch(() => null);
