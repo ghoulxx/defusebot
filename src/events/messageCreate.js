@@ -38,7 +38,7 @@ module.exports = {
     if (message.author.bot) return;
 
     const guildConfig = await GuildConfig.findOne({ guildId: message.guild.id });
-    const prefix = guildConfig?.prefix || '$';
+    const prefix = '$';
     const content = message.content.trim();
 
     if (content.startsWith(prefix)) {

@@ -21,7 +21,11 @@ module.exports = {
     }
 
     const newPrefix = args[0];
-    await GuildConfig.findOneAndUpdate({ guildId }, { prefix: newPrefix }, { upsert: true });
-    return message.reply({ embeds: [createEmbed({ title: 'Prefix updated', description: `New prefix: \`${newPrefix}\``, color: 'Green' })] });
+    if (newPrefix !== '$') {
+      return message.reply({ embeds: [createEmbed({ title: 'Prefix locked', description: 'This bot is locked to the `$` prefix and cannot use a different one.', color: 'Orange' })] });
+    }
+
+    await GuildConfig.findOneAndUpdate({ guildId }, { prefix: '$' }, { upsert: true });
+    return message.reply({ embeds: [createEmbed({ title: 'Prefix confirmed', description: 'The bot prefix is fixed to **$**.', color: 'Green' })] });
   }
 };
