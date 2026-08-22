@@ -1,11 +1,41 @@
+const { AuditLogEvent } = require('discord.js');
 const UserLevel = require('../models/UserLevel');
 const GuildConfig = require('../models/GuildConfig');
+const AntinukeConfig = require('../models/AntinukeConfig');
 const { createEmbed } = require('../utils/embed');
+const { antiNukeState, shouldTriggerAntiNuke, isTrustedTarget } = require('../utils/antinukeGuard');
+
+async function punishMember(guild, executor, punishment, reason) {
+  if (!executor || executor.id === guild.ownerId || executor.bot) return;
+  const member = await guild.members.fetch(executor.id).catch(() => null);
+  if (!member) return;
+  try {
+    if (punishment === 'ban') {
+      await member.ban({ reason });
+    } else {
+      await member.kick(reason);
+    }
+  } catch (error) {
+    console.error('Anti-nuke punishment failed:', error);
+  }
+}
 
 module.exports = {
   name: 'messageCreate',
   async execute(client, message) {
-    if (message.author.bot || !message.guild) return;
+    if (!message.guild) return;
+
+    const antinuke = await AntinukeConfig.findOne({ guildId: message.guild.id });
+    if (antinuke?.enabled && message.webhookId && shouldTriggerAntiNuke(message.guild.id, 'webhook', antiNukeState)) {
+      const logs = await message.guild.fetchAuditLogs({ type: AuditLogEvent.WebhookCreate, limit: 1 }).catch(() => null);
+      const executor = logs?.entries?.first()?.executor || null;
+      if (!executor || isTrustedTarget(antinuke, executor)) return;
+      const punishment = antinuke.punishments?.massChannelCreate || 'kick';
+      await punishMember(message.guild, executor, punishment, 'Anti-nuke triggered: webhook spam');
+      return;
+    }
+
+    if (message.author.bot) return;
 
     const guildConfig = await GuildConfig.findOne({ guildId: message.guild.id });
     const prefix = guildConfig?.prefix || '$';
