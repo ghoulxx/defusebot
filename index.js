@@ -20,13 +20,24 @@ client.commands = new Collection();
 const { loadCommands } = require('./src/handlers/commandHandler');
 const { loadEvents } = require('./src/handlers/eventHandler');
 
-if (!process.env.TOKEN || !process.env.MONGO_URI) {
-  console.error('Missing environment variables. Please set TOKEN and MONGO_URI.');
-  process.exit(1);
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value || !String(value).trim()) {
+    throw new Error(`Missing required environment variable: ${name}. Set it in Railway > Variables before deploying.`);
+  }
+  return String(value).trim().replace(/^"|"$/g, '');
 }
 
-const mongoUri = process.env.MONGO_URI.trim().replace(/^"|"$/g, '');
-const botToken = process.env.TOKEN.trim().replace(/^"|"$/g, '');
+let mongoUri;
+let botToken;
+
+try {
+  mongoUri = requireEnv('MONGO_URI');
+  botToken = requireEnv('TOKEN');
+} catch (error) {
+  console.error('\n[Startup Error]', error.message);
+  process.exit(1);
+}
 
 // Start application after MongoDB connection to avoid DB buffering errors
 (async () => {
