@@ -1,143 +1,19 @@
 const { createEmbed } = require('../../utils/embed');
-const { addSong, getQueue, resetPlayback } = require('./musicState');
 
-try {
-  const ffmpegPath = require('ffmpeg-static');
-  if (ffmpegPath && !process.env.FFMPEG_PATH) {
-    process.env.FFMPEG_PATH = ffmpegPath;
-  }
-} catch (error) {
-  // ffmpeg-static will be installed by package.json for Railway builds.
-}
-
-function getVoiceModule() {
-  try {
-    return require('@discordjs/voice');
-  } catch (error) {
-    return null;
-  }
-}
-
-async function resolveTrack(query) {
-  const trimmed = query?.trim();
-  if (!trimmed) return null;
-
-  try {
-    const playDl = require('play-dl');
-    const isUrl = /^https?:\/\//i.test(trimmed);
-    let source = trimmed;
-    let title = trimmed;
-
-    if (isUrl) {
-      const lower = trimmed.toLowerCase();
-      if (/spotify\.com/i.test(lower)) {
-        const spotifyItem = await playDl.spotify(trimmed).catch(() => null);
-        const searchText = spotifyItem
-          ? `${spotifyItem.name || spotifyItem.title || trimmed}${spotifyItem.artists?.length ? ` ${spotifyItem.artists.map((artist) => artist.name || artist).join(' ')}` : ''}`.trim()
-          : trimmed;
-        const searchResults = await playDl.search(searchText, { limit: 1 }).catch(() => []);
-        source = searchResults?.[0]?.url || trimmed;
-      }
-    } else {
-      const searchResults = await playDl.search(trimmed, { limit: 1 }).catch(() => []);
-      source = searchResults?.[0]?.url || trimmed;
-    }
-
-    const info = await playDl.video_basic_info(source).catch(() => null);
-    title = info?.video_details?.title || info?.title || title;
-    return { title, url: source };
-  } catch (error) {
-    console.error('[Music] Track resolve error:', error.message);
-    return { title: trimmed, url: trimmed };
-  }
-}
-
-async function playNext(guildId, message) {
-  const queue = getQueue(guildId);
-  if (!queue.songs.length) {
-    resetPlayback(guildId);
-    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'Queue finished.' })] });
-  }
-
-  const voice = getVoiceModule();
-  if (!voice) {
-    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'Audio playback is currently unavailable because @discordjs/voice is not installed in this environment.', color: 'Red' })] });
-  }
-
-  const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } = voice;
-  const song = queue.songs.shift();
-  const resolved = await resolveTrack(song.url || song.title);
-  if (!resolved) {
-    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'Unable to resolve that track.', color: 'Red' })] });
-  }
-
-  song.title = resolved.title;
-  song.url = resolved.url;
-  queue.current = song;
-  queue.playing = true;
-
-  if (!queue.connection) {
-    queue.connection = joinVoiceChannel({
-      channelId: message.member.voice.channel.id,
-      guildId: message.guild.id,
-      adapterCreator: message.guild.voiceAdapterCreator,
-    });
-  }
-
-  if (!queue.player) {
-    queue.player = createAudioPlayer();
-    queue.connection.subscribe(queue.player);
-    queue.player.on('stateChange', (oldState, newState) => {
-      if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
-        playNext(guildId, message).catch(() => {});
-      }
-    });
-  }
-
-  let stream;
-  try {
-    const playDl = require('play-dl');
-    stream = await playDl.stream(song.url, { quality: 0 });
-    if (!stream) {
-      return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'Failed to create stream. Track may be restricted.', color: 'Red' })] });
-    }
-  } catch (error) {
-    console.error('[Music] Stream error:', error.message);
-    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'That track could not be streamed.', color: 'Red' })] });
-  }
-
-  try {
-    const resource = createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true });
-    if (resource.volume) {
-      resource.volume.setVolume(Math.max(0, Math.min(1, (queue.volume || 100) / 100)));
-    }
-    queue.player.play(resource);
-    return message.channel.send({ embeds: [createEmbed({ title: 'Now playing', description: `${song.title}` })] });
-  } catch (error) {
-    console.error('[Music] Resource error:', error.message || error);
-    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'Failed to play track.', color: 'Red' })] });
-  }
-}
-
+// Music playback is currently disabled due to provider rate limiting issues with play-dl
 module.exports = {
   name: 'play',
   description: 'Play a song or add it to the queue.',
   async execute(message, args) {
-    if (!message.member.voice?.channel) {
-      return message.reply({ embeds: [createEmbed({ title: 'Music', description: 'Join a voice channel first.', color: 'Red' })] });
-    }
-
-    const query = args.join(' ');
-    if (!query) {
-      return message.reply({ embeds: [createEmbed({ title: 'Music', description: 'Usage: $play <youtube-url-or-search-term>', color: 'Red' })] });
-    }
-
-    const queue = addSong(message.guild.id, { title: query, url: query });
-
-    if (!queue.playing) {
-      await playNext(message.guild.id, message);
-    } else {
-      return message.reply({ embeds: [createEmbed({ title: 'Queued', description: `Added to queue: ${query}` })] });
-    }
+    return message.reply({
+      embeds: [
+        createEmbed({
+          title: 'Music',
+          description: 'Music playback is currently unavailable due to provider limitations. We are working on an alternative solution.',
+          color: 'Orange'
+        })
+      ]
+    });
   }
 };
+
