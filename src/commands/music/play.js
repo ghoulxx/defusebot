@@ -95,21 +95,41 @@ async function playNext(guildId, message) {
   queue.playing = true;
 
   if (!queue.connection) {
-    queue.connection = joinVoiceChannel({
-      channelId: message.member.voice.channel.id,
-      guildId: message.guild.id,
-      adapterCreator: message.guild.voiceAdapterCreator,
-    });
+    try {
+      console.log(`[Music] Joining voice channel: ${message.member.voice.channel.id}`);
+      queue.connection = joinVoiceChannel({
+        channelId: message.member.voice.channel.id,
+        guildId: message.guild.id,
+        adapterCreator: message.guild.voiceAdapterCreator,
+      });
+      console.log('[Music] Voice connection created');
+    } catch (error) {
+      console.error('[Music] Failed to join voice channel:', error.message || error);
+      return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: `Failed to join voice channel: ${error.message}`, color: 'Red' })] });
+    }
   }
 
   if (!queue.player) {
-    queue.player = createAudioPlayer();
-    queue.connection.subscribe(queue.player);
-    queue.player.on('stateChange', (oldState, newState) => {
-      if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
-        playNext(guildId, message).catch(() => {});
-      }
-    });
+    try {
+      queue.player = createAudioPlayer();
+      queue.connection.subscribe(queue.player);
+      console.log('[Music] Audio player created and subscribed');
+      
+      queue.player.on('error', (error) => {
+        console.error('[Music] Player error event:', error.message || error);
+      });
+      
+      queue.player.on('stateChange', (oldState, newState) => {
+        console.log(`[Music] Player state: ${oldState.status} -> ${newState.status}`);
+        if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
+          console.log('[Music] Track finished, playing next...');
+          playNext(guildId, message).catch(() => {});
+        }
+      });
+    } catch (error) {
+      console.error('[Music] Failed to create audio player:', error.message || error);
+      return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: `Failed to create audio player: ${error.message}`, color: 'Red' })] });
+    }
   }
 
   let stream;
@@ -130,13 +150,18 @@ async function playNext(guildId, message) {
   try {
     const streamSource = stream.stream || stream;
     const inputType = stream.type || 'arbitrary';
+    console.log(`[Music] Creating audio resource with type: ${inputType}`);
     const resource = createAudioResource(streamSource, { inputType, inlineVolume: true });
+    console.log('[Music] Audio resource created successfully');
     
     if (resource.volume) {
       resource.volume.setVolume(Math.max(0, Math.min(1, (queue.volume || 100) / 100)));
+      console.log(`[Music] Volume set to ${queue.volume || 100}%`);
     }
     
+    console.log(`[Music] Player status before play: ${queue.player.state?.status || 'unknown'}`);
     queue.player.play(resource);
+    console.log(`[Music] play() called. Player status after: ${queue.player.state?.status || 'unknown'}`);
     console.log(`[Music] Now playing: ${song.title}`);
     return message.channel.send({ embeds: [createEmbed({ title: 'Now playing', description: `${song.title}` })] });
   } catch (error) {
