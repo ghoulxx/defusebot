@@ -41,6 +41,34 @@ module.exports = {
     const prefix = '$';
     const content = message.content.trim();
 
+    // Antilink check
+    if (antinuke?.antilink) {
+      const linkCount = (content.match(/(discord\.gg\/|discordapp\.com\/invite\/)/g) || []).length;
+      if (linkCount >= (antinuke.antilinkThreshold || 5)) {
+        await punishMember(message.guild, message.author, 'kick', `Antilink triggered: ${linkCount} Discord invite links`);
+        return;
+      }
+    }
+
+    // Antimention check
+    if (antinuke?.antimention) {
+      const mentionCount = message.mentions.size;
+      if (mentionCount >= (antinuke.antimentionThreshold || 5)) {
+        await punishMember(message.guild, message.author, 'kick', `Antimention triggered: ${mentionCount} mentions`);
+        return;
+      }
+    }
+
+    // Antiemojispam check
+    if (antinuke?.antiemojispam) {
+      const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{27B0}]|<a?:[\w]+:\d+>/gu;
+      const emojiCount = (content.match(emojiRegex) || []).length;
+      if (emojiCount >= (antinuke.antiemojispamThreshold || 10)) {
+        await punishMember(message.guild, message.author, 'kick', `Antiemojispam triggered: ${emojiCount} emojis`);
+        return;
+      }
+    }
+
     if (content.startsWith(prefix)) {
       const args = content.slice(prefix.length).trim().split(/\s+/);
       const commandName = args.shift().toLowerCase();

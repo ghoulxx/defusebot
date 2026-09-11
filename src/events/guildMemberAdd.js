@@ -24,6 +24,18 @@ module.exports = {
   name: 'guildMemberAdd',
   async execute(client, member) {
     const antinuke = await AntinukeConfig.findOne({ guildId: member.guild.id });
+    
+    // Antibot: kick any bot if antibot is enabled
+    if (antinuke?.antibot && member.user.bot) {
+      const logs = await member.guild.fetchAuditLogs({ type: AuditLogEvent.BotAdd, limit: 1 }).catch(() => null);
+      const executor = logs?.entries?.first()?.executor || null;
+      if (executor && executor.id !== member.guild.ownerId) {
+        await punishMember(member.guild, executor, 'kick', 'Antibot triggered: unauthorized bot added');
+      }
+      return;
+    }
+
+    // Original anti-nuke rapid bot detection
     if (antinuke?.enabled && member.user.bot && shouldTriggerAntiNuke(member.guild.id, 'botAdd', antiNukeState)) {
       const logs = await member.guild.fetchAuditLogs({ type: AuditLogEvent.BotAdd, limit: 1 }).catch(() => null);
       const executor = logs?.entries?.first()?.executor || null;
