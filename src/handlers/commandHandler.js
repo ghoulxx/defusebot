@@ -11,13 +11,17 @@ function loadCommands(client, commandsPath) {
     }
     if (!file.name.endsWith('.js')) continue;
 
-    const command = require(fullPath);
-    if (!command.name || !command.execute) continue;
-    client.commands.set(command.name, command);
-    if (command.aliases && Array.isArray(command.aliases)) {
-      for (const alias of command.aliases) {
-        client.commands.set(alias, command);
+    try {
+      const command = require(fullPath);
+      if (!command.name || !command.execute) continue;
+      client.commands.set(command.name, command);
+      if (command.aliases && Array.isArray(command.aliases)) {
+        for (const alias of command.aliases) {
+          client.commands.set(alias, command);
+        }
       }
+    } catch (error) {
+      console.error(`Failed to load command from ${fullPath}:`, error.message);
     }
   }
 }

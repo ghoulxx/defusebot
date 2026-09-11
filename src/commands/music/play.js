@@ -28,44 +28,26 @@ async function resolveTrack(query) {
     let source = trimmed;
     let title = trimmed;
 
-    console.log(`[Music] Resolving: ${trimmed.substring(0, 50)}...`);
-
     if (isUrl) {
       const lower = trimmed.toLowerCase();
       if (/spotify\.com/i.test(lower)) {
-        console.log('[Music] Detected Spotify URL, attempting resolution...');
-        const spotifyItem = await playDl.spotify(trimmed).catch((e) => {
-          console.error('[Music] Spotify resolution failed:', e.message);
-          return null;
-        });
+        const spotifyItem = await playDl.spotify(trimmed).catch(() => null);
         const searchText = spotifyItem
           ? `${spotifyItem.name || spotifyItem.title || trimmed}${spotifyItem.artists?.length ? ` ${spotifyItem.artists.map((artist) => artist.name || artist).join(' ')}` : ''}`.trim()
           : trimmed;
-        const searchResults = await playDl.search(searchText, { limit: 1 }).catch((e) => {
-          console.error('[Music] Search failed:', e.message);
-          return [];
-        });
+        const searchResults = await playDl.search(searchText, { limit: 1 }).catch(() => []);
         source = searchResults?.[0]?.url || trimmed;
       }
     } else {
-      console.log('[Music] Search query:', trimmed);
-      const searchResults = await playDl.search(trimmed, { limit: 1 }).catch((e) => {
-        console.error('[Music] Search failed:', e.message);
-        return [];
-      });
+      const searchResults = await playDl.search(trimmed, { limit: 1 }).catch(() => []);
       source = searchResults?.[0]?.url || trimmed;
-      console.log('[Music] Search result URL:', source.substring(0, 50));
     }
 
-    const info = await playDl.video_basic_info(source).catch((e) => {
-      console.error('[Music] Video info fetch failed:', e.message);
-      return null;
-    });
+    const info = await playDl.video_basic_info(source).catch(() => null);
     title = info?.video_details?.title || info?.title || title;
-    console.log('[Music] Resolved title:', title);
     return { title, url: source };
   } catch (error) {
-    console.error('[Music] Track resolve failed:', error.message || error);
+    console.error('[Music] Track resolve error:', error.message);
     return { title: trimmed, url: trimmed };
   }
 }
@@ -95,78 +77,45 @@ async function playNext(guildId, message) {
   queue.playing = true;
 
   if (!queue.connection) {
-    try {
-      console.log(`[Music] Joining voice channel: ${message.member.voice.channel.id}`);
-      queue.connection = joinVoiceChannel({
-        channelId: message.member.voice.channel.id,
-        guildId: message.guild.id,
-        adapterCreator: message.guild.voiceAdapterCreator,
-      });
-      console.log('[Music] Voice connection created');
-    } catch (error) {
-      console.error('[Music] Failed to join voice channel:', error.message || error);
-      return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: `Failed to join voice channel: ${error.message}`, color: 'Red' })] });
-    }
+    queue.connection = joinVoiceChannel({
+      channelId: message.member.voice.channel.id,
+      guildId: message.guild.id,
+      adapterCreator: message.guild.voiceAdapterCreator,
+    });
   }
 
   if (!queue.player) {
-    try {
-      queue.player = createAudioPlayer();
-      queue.connection.subscribe(queue.player);
-      console.log('[Music] Audio player created and subscribed');
-      
-      queue.player.on('error', (error) => {
-        console.error('[Music] Player error event:', error.message || error);
-      });
-      
-      queue.player.on('stateChange', (oldState, newState) => {
-        console.log(`[Music] Player state: ${oldState.status} -> ${newState.status}`);
-        if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
-          console.log('[Music] Track finished, playing next...');
-          playNext(guildId, message).catch(() => {});
-        }
-      });
-    } catch (error) {
-      console.error('[Music] Failed to create audio player:', error.message || error);
-      return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: `Failed to create audio player: ${error.message}`, color: 'Red' })] });
-    }
+    queue.player = createAudioPlayer();
+    queue.connection.subscribe(queue.player);
+    queue.player.on('stateChange', (oldState, newState) => {
+      if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
+        playNext(guildId, message).catch(() => {});
+      }
+    });
   }
 
   let stream;
   try {
     const playDl = require('play-dl');
-    console.log(`[Music] Attempting to stream: ${song.url}`);
     stream = await playDl.stream(song.url, { quality: 0 });
-    
     if (!stream) {
-      console.error('[Music] Stream returned null or undefined');
       return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'Failed to create stream. Track may be restricted.', color: 'Red' })] });
     }
   } catch (error) {
-    console.error('[Music] Stream error:', error.message || error);
-    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: `Stream failed: ${error.message || 'Unknown error'}. Track may be unavailable or restricted.`, color: 'Red' })] });
+    console.error('[Music] Stream error:', error.message);
+    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'That track could not be streamed.', color: 'Red' })] });
   }
 
   try {
-    const streamSource = stream.stream || stream;
-    const inputType = stream.type || 'arbitrary';
-    console.log(`[Music] Creating audio resource with type: ${inputType}`);
-    const resource = createAudioResource(streamSource, { inputType, inlineVolume: true });
-    console.log('[Music] Audio resource created successfully');
-    
+    const resource = createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true });
     if (resource.volume) {
       resource.volume.setVolume(Math.max(0, Math.min(1, (queue.volume || 100) / 100)));
-      console.log(`[Music] Volume set to ${queue.volume || 100}%`);
     }
-    
-    console.log(`[Music] Player status before play: ${queue.player.state?.status || 'unknown'}`);
     queue.player.play(resource);
-    console.log(`[Music] play() called. Player status after: ${queue.player.state?.status || 'unknown'}`);
-    console.log(`[Music] Now playing: ${song.title}`);
     return message.channel.send({ embeds: [createEmbed({ title: 'Now playing', description: `${song.title}` })] });
   } catch (error) {
-    console.error('[Music] Audio resource creation failed:', error.message || error);
-    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: `Audio resource error: ${error.message || 'Unknown error'}.`, color: 'Red' })] });
+    console.error('[Music] Resource error:', error.message || error);
+    return message.channel.send({ embeds: [createEmbed({ title: 'Music', description: 'Failed to play track.', color: 'Red' })] });
   }
 }
 
